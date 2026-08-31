@@ -31,7 +31,9 @@ try:
     else:
         # Transforma o JSON do S3 em um DataFrame do Pandas
         df = pd.DataFrame(dados_json)
-        
+        st.write(df.columns.tolist())
+	st.write(df.head())
+	st.stop() 
         # Calculando totais com Pandas em vez do PostgreSQL
         total_campanhas = len(df)
         total_empresas = df['origem'].nunique()
