@@ -1,3 +1,9 @@
+streamlit
+plotly
+python-dotenv
+pandas
+numpy
+
 beautifulsoup4==4.15.0
 boto3==1.43.82
 botocore==1.43.82
@@ -12,5 +18,3 @@ six==1.17.0
 soupsieve==2.9.2
 typing_extensions==4.16.0
 urllib3==2.7.0
-plotly
-python-dotenv
