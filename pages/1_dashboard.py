@@ -36,18 +36,8 @@ try:
         st.warning("Nenhum dado encontrado no S3.")
 
     else:
-
-        # DataFrame
+        # Cria o DataFrame
         df = pd.DataFrame(dados_json)
-
-        # DEBUG (remova depois)
-        st.write("Colunas encontradas:")
-        st.write(df.columns.tolist())
-
-        st.write("Primeiros registros:")
-        st.write(df.head())
-
-        st.stop()
 
         # Indicadores
         total_campanhas = len(df)
@@ -63,7 +53,7 @@ try:
 
         st.divider()
 
-        # Agrupamento
+        # Gráfico
         df_agrupado = (
             df.groupby("origem")
             .size()
@@ -83,11 +73,14 @@ try:
             }
         )
 
+        fig.update_traces(textposition="outside")
+        fig.update_layout(showlegend=False)
+
         st.plotly_chart(fig, use_container_width=True)
 
         st.divider()
 
-        st.subheader("Últimas campanhas")
+        st.subheader("📋 Últimas campanhas")
 
         if "data_coleta" in df.columns:
             df = df.sort_values(
@@ -96,16 +89,12 @@ try:
             )
 
         for _, alerta in df.head(10).iterrows():
-
-            st.info(
-                f"""
-**Empresa:** {alerta.get("origem","-")}
-
-**Título:** {alerta.get("titulo","-")}
-
-🔗 {alerta.get("url","-")}
-"""
-            )
+            with st.container(border=True):
+                st.markdown(f"**Empresa:** {alerta.get('origem', '-')}")
+                st.markdown(f"**Título:** {alerta.get('titulo', '-')}")
+                st.markdown(f"**Categoria:** {alerta.get('categoria', '-')}")
+                st.markdown(f"**Prioridade:** {alerta.get('prioridade', '-')}")
+                st.markdown(f"🔗 {alerta.get('url', '-')}")
 
 except Exception as e:
     st.error(f"Erro ao carregar dados do S3: {e}")
