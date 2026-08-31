@@ -51,7 +51,7 @@ try:
             df_agrupado,
             x="origem",
             y="Campanhas",
-            color="empresa",
+            color="origem",
             text="Campanhas",
             height=500,
             labels={"origem": "Empresa"}

@@ -40,7 +40,7 @@ try:
             
         texto += "\nÚltimas campanhas:\n"
         for _, alerta in df_ultimos.iterrows():
-            texto += f"- [{alerta['empresa']}] {alerta['titulo']}\n"
+            texto += f"- [{alerta['origem']}] {alerta['titulo']}\n"
             
         st.code(texto)
 
