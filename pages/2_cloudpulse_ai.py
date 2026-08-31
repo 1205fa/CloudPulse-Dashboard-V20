@@ -31,12 +31,12 @@ try:
         df = pd.DataFrame(dados_json)
         
         total = len(df)
-        df_agrupado = df.groupby('empresa').size().reset_index(name='Campanhas')
-        df_ultimos = df.sort_values(by="criado_em", ascending=False).head(5)
+        df_agrupado = df.groupby('origem').size().reset_index(name='Campanhas')
+        df_ultimos = df.sort_values(by="data_coleta", ascending=False).head(5)
         
         texto = f"Existem {total} campanhas.\n"
         for _, row in df_agrupado.iterrows():
-            texto += f"{row['empresa']}: {row['Campanhas']}\n"
+            texto += f"{row['origem']}: {row['Campanhas']}\n"
             
         texto += "\nÚltimas campanhas:\n"
         for _, alerta in df_ultimos.iterrows():

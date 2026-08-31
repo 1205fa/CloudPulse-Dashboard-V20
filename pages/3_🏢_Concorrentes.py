@@ -30,7 +30,7 @@ try:
         df = pd.DataFrame(dados_json)
         
         st.subheader("📊 Volume por Empresa")
-        df_agrupado = df.groupby('empresa').size().reset_index(name='Total de Campanhas')
+        df_agrupado = df.groupby('origem').size().reset_index(name='Total de Campanhas')
         st.dataframe(df_agrupado, use_container_width=True, hide_index=True)
         
         st.divider()

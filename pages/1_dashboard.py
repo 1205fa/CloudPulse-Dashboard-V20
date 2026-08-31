@@ -34,7 +34,7 @@ try:
         
         # Calculando totais com Pandas em vez do PostgreSQL
         total_campanhas = len(df)
-        total_empresas = df['empresa'].nunique()
+        total_empresas = df['origem'].nunique()
         
         col1, col2 = st.columns(2)
         with col1:
@@ -45,16 +45,16 @@ try:
         st.divider()
         
         # Agrupando dados para o gráfico
-        df_agrupado = df.groupby('empresa').size().reset_index(name='Campanhas')
+        df_agrupado = df.groupby('origem').size().reset_index(name='Campanhas')
         
         fig = px.bar(
             df_agrupado,
-            x="empresa",
+            x="origem",
             y="Campanhas",
             color="empresa",
             text="Campanhas",
             height=500,
-            labels={"empresa": "Empresa"}
+            labels={"origem": "Empresa"}
         )
         st.plotly_chart(fig, use_container_width=True)
         
@@ -62,12 +62,12 @@ try:
         st.subheader("Últimas campanhas")
         
         # Pegando os 10 últimos registros baseados na data
-        df_ultimos = df.sort_values(by="criado_em", ascending=False).head(10)
+        df_ultimos = df.sort_values(by="data_coleta", ascending=False).head(10)
         
         for _, alerta in df_ultimos.iterrows():
             st.info(
                 f"""
-**Empresa:** {alerta['empresa']}
+**Empresa:** {alerta['origem']}
 
 **Título:** {alerta['titulo']}
 
