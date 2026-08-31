@@ -18,7 +18,7 @@ s3_client = boto3.client(
 )
 
 BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
-FILE_KEY = "dados_finais.json"  # <-- Vamos ajustar esse nome real no próximo passo!
+FILE_KEY = "raw/coleta_atual.json"  # <-- Vamos ajustar esse nome real no próximo passo!
 
 try:
     response = s3_client.get_object(Bucket=BUCKET_NAME, Key=FILE_KEY)

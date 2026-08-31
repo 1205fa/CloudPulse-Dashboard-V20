@@ -19,7 +19,7 @@ s3_client = boto3.client(
 
 # TODO: Precisamos definir os nomes corretos aqui
 BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "substituir-pelo-nome-do-bucket")
-FILE_KEY = "substituir-pelo-nome-do-arquivo.json"
+FILE_KEY = "raw/coleta_atual.json"
 
 try:
     st.info("Buscando dados mais recentes no S3...")
