@@ -1,87 +1,45 @@
-import os
 import streamlit as st
-import boto3
-import json
-import pandas as pd
-from dotenv import load_dotenv
+import requests
 
-load_dotenv()
+st.set_page_config(page_title="I.A.BI. MAGO", page_icon="🧙‍♂️", layout="wide")
 
-st.set_page_config(page_title="CloudPulse AI", page_icon="🤖")
-st.title("🤖 CloudPulse AI")
+st.title("🤖 I.A.BI. MAGO")
+st.markdown("Seu Agente de Inteligência Competitiva. Pergunte qualquer coisa sobre o mercado!")
 
-# Configuração do Cliente S3
-s3_client = boto3.client(
-    's3',
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    region_name=os.getenv("AWS_DEFAULT_REGION", "us-east-1")
-)
+# Inicializa o histórico de chat na memória do Streamlit
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
-FILE_KEY = "raw/coleta_atual.json"  # <-- ATENÇÃO: Ajustaremos esse nome final em breve
+# Desenha as mensagens anteriores na tela
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-try:
-    response = s3_client.get_object(Bucket=BUCKET_NAME, Key=FILE_KEY)
-    dados_json = json.loads(response['Body'].read().decode('utf-8'))
+# Caixa de texto estilo ChatGPT
+if prompt := st.chat_input("Digite seu comando (ex: Quais as maiores ameaças do mercado?)..."):
     
-    if not dados_json:
-        st.warning("Nenhum dado encontrado no S3 para análise.")
-    else:
-        df = pd.DataFrame(dados_json)
-        
-        total = len(df)
-        df_agrupado = df.groupby('origem').size().reset_index(name='Campanhas')
-        df_ultimos = df.sort_values(by="data_coleta", ascending=False).head(5)
-        
-        texto = f"Existem {total} campanhas.\n"
-        for _, row in df_agrupado.iterrows():
-            texto += f"{row['origem']}: {row['Campanhas']}\n"
-            
-        texto += "\nÚltimas campanhas:\n"
-        for _, alerta in df_ultimos.iterrows():
-            texto += f"- [{alerta['origem']}] {alerta['titulo']}\n"
-            
-        st.code(texto)
+    # Salva e mostra a pergunta do usuário
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-        if st.button("Gerar Insight"):
+    # Chama a nossa API do Mago
+    with st.chat_message("assistant"):
+        with st.spinner("Analisando cenário competitivo..."):
             try:
-                cliente = boto3.client(
-                    "bedrock-runtime",
-                    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                    region_name=os.getenv("AWS_DEFAULT_REGION", "us-east-1")
+                # Envia o histórico inteiro para o backend
+                resposta = requests.post(
+                    "http://127.0.0.1:8000/chat",
+                    json={"mensagens": st.session_state.messages}
                 )
-
-                prompt = f"""
-                Você é um analista de inteligência competitiva.
-
-                Dados:
-
-                {texto}
-
-                Faça:
-
-                1. Empresa líder.
-                2. Tendências.
-                3. Oportunidades.
-                4. Recomendações.
-                """
-
-                resposta = cliente.converse(
-                    modelId=os.getenv("MODEL_ID", "amazon.titan-text-lite-v1"), # Fallback seguro de modelo
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": [{"text": prompt}]
-                        }
-                    ]
-                )
-
-                texto_ia = resposta["output"]["message"]["content"][0]["text"]
-                st.success(texto_ia)
-            except Exception as bedrock_err:
-                 st.error(f"Erro no Bedrock: {bedrock_err}. Verifique se o MODEL_ID está no Secrets.")
-
-except Exception as e:
-    st.error(f"Falha na leitura do S3. Verifique o nome do arquivo FILE_KEY. (Detalhe: {e})")
+                
+                if resposta.status_code == 200:
+                    texto_ia = resposta.json().get("resposta", "Erro ao decodificar a resposta.")
+                    st.markdown(texto_ia)
+                    # Salva a resposta na memória
+                    st.session_state.messages.append({"role": "assistant", "content": texto_ia})
+                else:
+                    st.error(f"Erro na API do Mago: {resposta.text}")
+                    
+            except Exception as e:
+                st.error("O servidor do Mago (Backend) parece estar desligado. Deixe o Uvicorn rodando no terminal!")
