@@ -42,13 +42,11 @@ try:
     if dados_json:
         df = pd.DataFrame(dados_json)
         
-        # Cálculos usando os dados reais do seu scraper
         total_campanhas = len(df)
         total_empresas = df["origem"].nunique() if "origem" in df.columns else 0
         categorias_ativas = df["categoria"].nunique() if "categoria" in df.columns else 0
         
         if "data_coleta" in df.columns:
-            # Pega a data mais recente da coleta e formata
             ultima_coleta = str(df["data_coleta"].max())[:10]
 
 except Exception as e:
@@ -87,6 +85,8 @@ st.divider()
 
 # --- ARQUITETURA ---
 st.markdown("### 🏗️ Arquitetura de Dados")
-st.markdown("""
-```text
-🌐 Internet ➔ 🕷️ Scraper ➔ 🪣 Amazon S3 ➔ 🧠 AWS Bedrock ➔ 🪄 I.A.BI. MAGO ➔ 📊 Dashboard
+st.code("🌐 Internet ➔ 🕷️ Scraper ➔ 🪣 Amazon S3 ➔ 🧠 AWS Bedrock ➔ 🪄 I.A.BI. MAGO ➔ 📊 Dashboard", language="text")
+st.caption("O CloudPulse não apenas coleta dados. Ele transforma informações em inteligência competitiva para apoiar decisões estratégicas em tempo real.")
+
+st.divider()
+st.markdown("👈 **Navegue pelo menu lateral para explorar os módulos do sistema.**")
