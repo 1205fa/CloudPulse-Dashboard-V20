@@ -1,104 +1,92 @@
+import streamlit as st
+import pandas as pd
+import boto3
 import json
-import logging
 import os
-from config.settings import AWS_BUCKET, AWS_REGION
-from agente_discovery import buscar_urls
-from scraper import extrair_eventos_mercado
-from validator import validar_json
-from comparador import comparar_coletas
-from agente_alerta import gerar_alertas
-from bedrock_service import gerar_relatorio_executivo
-from services.s3_service import enviar_para_s3
+from dotenv import load_dotenv
 
-# Configuração de Log para o AWS CloudWatch
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+load_dotenv()
 
-def lambda_handler(event, context):
-    """
-    Função principal acionada pela AWS Lambda.
-    """
-    logger.info("🚀 Iniciando a execução da Lambda (CloudPulse BI)")
+# Configuração da página (deve ser o primeiro comando)
+st.set_page_config(
+    page_title="CloudPulse Intelligence",
+    page_icon="☁️",
+    layout="wide"
+)
 
-    # ==========================================
-    # FASE 1: DISCOVERY
-    # ==========================================
-    logger.info("--- 🔎 FASE 1: DISCOVERY ---")
-    urls = buscar_urls()
-    if urls:
-        caminho_descobertas = "/tmp/descobertas.json"
-        with open(caminho_descobertas, "w", encoding="utf-8") as f:
-            json.dump(urls, f, indent=4, ensure_ascii=False)
-        logger.info(f"Mapeados {len(urls)} links.")
+# --- HERO PRINCIPAL ---
+st.title("☁️ CloudPulse Intelligence Platform")
+st.markdown("### Transformando dados de mercado em decisões estratégicas com Inteligência Artificial.")
+st.divider()
 
-    # ==========================================
-    # FASE 2: CONTENT INTELLIGENCE
-    # ==========================================
-    logger.info("--- 🧠 FASE 2: CONTENT INTELLIGENCE ---")
-    eventos = extrair_eventos_mercado()
+# --- BUSCA DOS DADOS REAIS NO S3 ---
+total_empresas = 0
+total_campanhas = 0
+categorias_ativas = 0
+ultima_coleta = "Aguardando..."
+
+try:
+    s3_client = boto3.client(
+        "s3",
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+        region_name=os.getenv("AWS_DEFAULT_REGION", "us-east-1")
+    )
     
-    if eventos:
-        caminho_dados = "/tmp/eventos_mercado.json"
-        with open(caminho_dados, "w", encoding="utf-8") as f:
-            json.dump(eventos, f, ensure_ascii=False, indent=4)
-        logger.info(f"Extraídos {len(eventos)} eventos de negócios estruturados.")
-
-        # ==========================================
-        # FASE 3: VALIDAÇÃO & STORAGE
-        # ==========================================
-        if validar_json(eventos):
-            logger.info("--- ☁️ FASE 3: UPLOAD AWS S3 ---")
-            # enviar_para_s3(AWS_BUCKET, caminho_dados, "raw/coleta_atual.json")
-            logger.info("Upload engatilhado para o S3.")
-            
-            # ==========================================
-            # FASE 4: BUSINESS INTELLIGENCE (Comparador)
-            # ==========================================
-            logger.info("--- ⚖️ FASE 4: BUSINESS INTELLIGENCE ---")
-            caminho_ontem = "/tmp/ontem.json"
-            
-            # Simulando os dados de ontem para o teste do Hackathon
-            if not os.path.exists(caminho_ontem):
-                falso_ontem = [{"link": "site.com/antigo", "titulo": "Velho"}]
-                with open(caminho_ontem, "w", encoding="utf-8") as f:
-                    json.dump(falso_ontem, f)
-            
-            relatorio_mudancas = comparar_coletas(caminho_ontem, caminho_dados)
-
-            # ==========================================
-            # FASE 5: ALERTAS E NOTIFICAÇÕES (SNS)
-            # ==========================================
-            logger.info("--- 🚨 FASE 5: ALERTAS ---")
-            alertas = gerar_alertas(relatorio_mudancas)
-            
-            if alertas:
-                logger.info(f"✅ FINALIZADO: {len(alertas)} alertas de alta prioridade prontos!")
-                
-                # ==========================================
-                # FASE 6: IA EXECUTIVA (Amazon Bedrock)
-                # ==========================================
-                logger.info("--- 🤖 FASE 6: IA EXECUTIVA (Bedrock) ---")
-                relatorio_ia = gerar_relatorio_executivo(alertas)
-                
-                print("\n" + "="*60)
-                print("📊 RELATÓRIO EXECUTIVO CLOUDPULSE")
-                print("="*60)
-                print(relatorio_ia)
-                print("="*60 + "\n")
-                
-            else:
-                logger.info("Nenhuma mudança crítica detectada hoje.")
-
-            return {
-                'statusCode': 200,
-                'body': json.dumps('Sucesso: Pipeline CloudPulse rodou com sucesso!')
-            }
-        else:
-            logger.error("Falha na validação dos dados.")
-            return {'statusCode': 400, 'body': json.dumps('Erro de Validação')}
+    BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
+    FILE_KEY = "raw/coleta_atual.json"
     
-    return {'statusCode': 500, 'body': json.dumps('Erro: Sem dados do Scraper')}
+    response = s3_client.get_object(Bucket=BUCKET_NAME, Key=FILE_KEY)
+    dados_json = json.loads(response["Body"].read().decode("utf-8"))
+    
+    if dados_json:
+        df = pd.DataFrame(dados_json)
+        
+        # Cálculos usando os dados reais do seu scraper
+        total_campanhas = len(df)
+        total_empresas = df["origem"].nunique() if "origem" in df.columns else 0
+        categorias_ativas = df["categoria"].nunique() if "categoria" in df.columns else 0
+        
+        if "data_coleta" in df.columns:
+            # Pega a data mais recente da coleta e formata
+            ultima_coleta = str(df["data_coleta"].max())[:10]
 
-if __name__ == "__main__":
-    resultado = lambda_handler({}, {})
-    print(f"\nResultado da Execução: {resultado}")
+except Exception as e:
+    st.warning("Conectando aos dados em tempo real... (Painel aguardando credenciais na nuvem)")
+
+# --- INDICADORES EM DESTAQUE ---
+st.markdown("#### Visão Geral do Mercado (Tempo Real)")
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    st.metric(label="Empresas Monitoradas", value=total_empresas)
+with col2:
+    st.metric(label="Campanhas Ativas", value=total_campanhas)
+with col3:
+    st.metric(label="Categorias Mapeadas", value=categorias_ativas)
+with col4:
+    st.metric(label="Última Coleta", value=ultima_coleta)
+
+st.divider()
+
+# --- FUNCIONALIDADES ---
+st.markdown("### 🌟 Nossos Diferenciais")
+c1, c2, c3 = st.columns(3)
+
+with c1:
+    st.info("📊 **Dashboard Executivo**\n\nVisualização interativa com base unificada.")
+    st.info("📄 **Relatórios**\n\nGeração automatizada de inteligência de mercado.")
+with c2:
+    st.success("🤖 **I.A.BI. MAGO**\n\nAgente autônomo respondendo com dados 100% reais.")
+    st.success("🚨 **Alertas**\n\nIdentificação de anomalias, mudanças e prioridades.")
+with c3:
+    st.warning("🏢 **Monitoramento**\n\nMapeamento contínuo dos principais concorrentes.")
+    st.warning("☁️ **Infraestrutura AWS**\n\nAlta disponibilidade Serverless com S3 e Bedrock.")
+
+st.divider()
+
+# --- ARQUITETURA ---
+st.markdown("### 🏗️ Arquitetura de Dados")
+st.markdown("""
+```text
+🌐 Internet ➔ 🕷️ Scraper ➔ 🪣 Amazon S3 ➔ 🧠 AWS Bedrock ➔ 🪄 I.A.BI. MAGO ➔ 📊 Dashboard
