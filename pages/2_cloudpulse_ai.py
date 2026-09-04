@@ -5,7 +5,8 @@ import os
 import time
 from dotenv import load_dotenv
 
-from backend.discovery import buscar_empresa
+# IMPORTAÇÃO DO NOSSO ORQUESTRADOR ENTERPRISE
+from backend.orchestrator import CloudPulseOrchestrator
 
 # Carrega as variáveis de ambiente
 load_dotenv()
@@ -49,7 +50,7 @@ def obter_dados_s3():
         return f"Erro ao acessar o histórico: {e}"
 
 # =====================================================
-# DISCOVERY EM TEMPO REAL (O NOVO CRAWLER)
+# DISCOVERY EM TEMPO REAL (IA MULTIAGENTE)
 # =====================================================
 def pesquisar_preco_ao_vivo(pergunta):
     time.sleep(1)
@@ -58,56 +59,13 @@ def pesquisar_preco_ao_vivo(pergunta):
 
     for empresa in empresas:
         if empresa in pergunta:
-            resultado = buscar_empresa(empresa)
+            # Aciona o Orquestrador Enterprise
+            orquestrador = CloudPulseOrchestrator()
+            resposta_orquestrada = orquestrador.executar(empresa)
+            
+            return resposta_orquestrada
 
-            resposta = (
-                "### 📊 DOSSIÊ DE INTELIGÊNCIA EM TEMPO REAL\n\n"
-                f"**Empresa:** {resultado.get('empresa', empresa.title())}\n"
-                f"**Site:** {resultado.get('url', 'N/A')}\n\n"
-            )
-
-            if resultado.get("precos"):
-                resposta += "💰 **Preços Mapeados:**\n"
-                for preco in resultado["precos"]: resposta += f"• {preco}\n"
-            else:
-                resposta += "💰 **Preços Mapeados:** Funil fechado (sem valores públicos).\n"
-
-            if resultado.get("promocoes"):
-                resposta += "\n🎁 **Promoções e Ofertas:**\n"
-                for promo in resultado["promocoes"]: resposta += f"• {promo}\n"
-
-            if resultado.get("cursos"):
-                resposta += "\n📚 **Cursos Detectados:**\n"
-                for curso in resultado["cursos"]: resposta += f"• {curso.title()}\n"
-
-            if resultado.get("telefones"):
-                resposta += "\n☎️ **Telefones:**\n"
-                for tel in resultado["telefones"]: resposta += f"• {tel}\n"
-
-            if resultado.get("emails"):
-                resposta += "\n📧 **E-mails:**\n"
-                for email in resultado["emails"]: resposta += f"• {email}\n"
-
-            if resultado.get("whatsapp"):
-                resposta += "\n🟢 **WhatsApp:**\n"
-                for wpp in resultado["whatsapp"]: resposta += f"• {wpp}\n"
-
-            if resultado.get("redes_sociais"):
-                resposta += "\n📱 **Redes Sociais:**\n"
-                for rede in resultado["redes_sociais"]: resposta += f"• {rede}\n"
-
-            if resultado.get("campanhas"):
-                resposta += "\n🎯 **Links de Campanhas:**\n"
-                for camp in resultado["campanhas"]: resposta += f"• {camp}\n"
-
-            if resultado.get("links"):
-                resposta += "\n🌐 **Principais Links Mapeados (Amostra):**\n"
-                # Pega só os 10 primeiros para não poluir a tela
-                for link in resultado["links"][:10]: resposta += f"• {link}\n" 
-
-            return resposta
-
-    return "❌ **Erro:** Empresa não cadastrada no motor do Crawler."
+    return "❌ **Erro:** Empresa não cadastrada no motor de agentes."
 
 # =====================================================
 # MEMÓRIA E CHAT
@@ -127,7 +85,7 @@ if prompt:
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("O Crawler V20 está varrendo a web..."):
+        with st.spinner("Os Agentes de IA estão varrendo a web e validando os dados..."):
             try:
                 # GATILHOS ATUALIZADOS PARA O CRAWLER V20
                 palavras_tempo_real = [
@@ -140,7 +98,7 @@ if prompt:
                 if any(palavra in prompt.lower() for palavra in palavras_tempo_real):
                     contexto = pesquisar_preco_ao_vivo(prompt)
                     usar_bedrock = False
-                    aviso = "🔴 **Modo Crawler em Tempo Real (Web Scraper)**\n\n"
+                    aviso = "🔴 **Modo IA Multiagente Ativado (Orquestrador Enterprise)**\n\n"
                 else:
                     contexto = obter_dados_s3()
                     usar_bedrock = True
